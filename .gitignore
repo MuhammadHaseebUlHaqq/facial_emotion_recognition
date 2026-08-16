@@ -1,0 +1,26 @@
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# FER-2013 dataset (~157 MB, download with web_demo/download_fer2013.py)
+archive/
+train/
+test/
+
+# macOS archive junk
+__MACOSX/
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Jupyter
+.ipynb_checkpoints/
