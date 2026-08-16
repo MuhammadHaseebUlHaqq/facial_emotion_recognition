@@ -1,0 +1,222 @@
+
+--- Slide 1 ---
+CS-419 · DEEP LEARNING · SPRING 2026
+FINAL PROJECT
+Facial Emotion Recognition
+A study of seven deep learning models on the FER-2013 dataset — from MLP baselines to transfer learning.
+NATIONAL UNIVERSITY OF SCIENCES & TECHNOLOGY · BSCS-13-E
+TEAM
+Authors
+Muhammad Moiz
+464192
+Muhammad Haseeb ul Haq
+454512
+INSTRUCTOR
+Ma’am Nikhar Azhar
+SEMESTER PROJECT · FINAL PRESENTATION
+
+--- Slide 2 ---
+PROBLEM STATEMENT
+02 / 10
+THE TASK
+Reading emotion from a 48×48 grayscale face.
+A multi-class image classification problem with seven possible labels — and a lot of ways to get it wrong.
+A face showing fear can look almost identical to one showing surprise — and at 48 pixels, the difference can disappear entirely.
+WHY IT'S HARD
+Expressions vary across people, lighting, and angle. Subtle features — a furrowed brow, a half-smile — are washed out by low resolution.
+WHY IT MATTERS
+Applications in healthcare, accessibility, customer experience, and HCI — wherever a system needs to read affect.
+OUR QUESTION
+Which deep learning techniques helped the most, and why?
+
+--- Slide 3 ---
+THE DATASET
+03 / 10
+FER-2013 · ICML 2013 CHALLENGES IN REPRESENTATION LEARNING
+35,709 faces. Seven emotions. One stubborn imbalance.
+24,402
+TRAINING SET
+After reserving 15% as validation
+4,307
+VALIDATION SET
+Carved out from training data
+7,178
+TEST SET
+Held out, never seen during training
+SEVEN CLASSES
+Happy 7,215
+Neutral 4,965
+Sad 4,830
+Fear 4,097
+Angry 3,995
+Surprise 3,171
+Disgust 436
+Disgust appears ~10× less often than Happy. We compensated with class weighting — Disgust earned the largest weight at 8.96.
+
+--- Slide 4 ---
+METHODOLOGY
+04 / 10
+PREPROCESSING & TRAINING SETUP
+A clean, controlled pipeline — one variable at a time.
+i
+Image Preparation
+Read as grayscale via OpenCV, resized to 48×48, reshaped to (48,48,1), normalized to [0,1].
+ii
+Label Encoding
+Emotion indices converted to one-hot vectors using Keras categorical utilities.
+iii
+Class Weighting
+Computed via sklearn's compute_class_weight("balanced") to fight the Disgust imbalance.
+disgust → 8.96 · happy → 0.54
+iv
+Optimizer & Loss
+Adam at lr=0.001 (default), categorical cross-entropy loss. Batch size 64.
+v
+Training Length
+Max 30 epochs with EarlyStopping (patience 6) and ReduceLROnPlateau (factor 0.5, patience 3).
+vi
+Checkpointing
+Best weights saved per run — letting us recover from Colab session crashes without restarting from scratch.
+
+--- Slide 5 ---
+EXPERIMENTAL DESIGN
+05 / 10
+SEVEN CONFIGURATIONS · ONE VARIABLE AT A TIME
+From a flat MLP to transfer learning — step by step.
+Each model changes exactly one thing from the last, so we can isolate the effect of every technique.
+01
+MLP Baseline
+Flatten → dense layers only. No spatial structure.
+32.77 %
+02
+Basic CNN
+3 conv + pool blocks. No regularization yet.
+53.78 %
+03
++ BatchNorm + Dropout
+Adds regularization and GlobalAveragePooling.
+54.39 %
+04
+Optimizer Sweep
+SGD vs Adam vs RMSProp on the same architecture.
+57.73 %
+★
+05
++ Data Augmentation
+RandomFlip, rotation ≤15°, zoom ≤15%.
+58.30 %
+06
+Transfer Learning
+MobileNetV2, ImageNet pretrained, 2-phase fine-tune.
+37.60 %
+07
+Ablation Study
+Components removed from best model — what mattered most?
+→ slide 08
+
+--- Slide 6 ---
+RESULTS
+06 / 10
+COMPARATIVE ANALYSIS
+CNN + Augmentation wins on both accuracy and parameter count.
+HEADLINE FINDING
+The biggest jump came from swapping MLP for CNN (+21.0%) . Spatial structure isn't optional — it's everything.
+
+--- Slide 7 ---
+BEST MODEL
+07 / 10
+CNN + DATA AUGMENTATION
+Our highest accuracy. Fewest parameters.
+58.30%
+TEST ACCURACY · FER-2013 HOLDOUT
+PARAMETERS
+456,199
+EPOCHS
+30 (full)
+OPTIMIZER
+Adam · lr 0.001
+HUMAN CEILING
+~65%
+WHAT WE CHANGED
+Kept the same regularized CNN, baked augmentation directly into the model with Keras layers — RandomFlip, RandomRotation (≤15°), RandomZoom (≤15%).
+WHY IT WORKED
+The model sees the same face at different angles, scales, and orientations during training — and learns that the emotion label doesn't change. More variety, less memorization.
+
+--- Slide 8 ---
+ERROR ANALYSIS & ABLATION
+08 / 10
+PER-CLASS PERFORMANCE · CNN + AUGMENTATION
+The model loves a smile. Fear is its blind spot.
+F1-SCORE BY EMOTION
+Happy
+0.80
+Surprise
+0.73
+Neutral
+0.55
+Angry
+0.48
+Sad
+0.45
+Disgust
+0.39
+Fear
+0.34
+WHAT IT GETS RIGHT
+Happy & Surprise — visually distinctive features (a smile, an open mouth + raised brows) survive even at 48 pixels.
+WHAT IT GETS WRONG
+Fear overlaps with Surprise (wide eyes, open mouth) and Angry (furrowed brow) — subtle differences are lost at this resolution.
+Disgust has high recall (0.71) but low precision (0.27) — the class weight pulled it forward, sometimes too aggressively.
+ABLATION HEADLINE
+Removing augmentation drops accuracy from 58.30% → 43.80% — a −14.5 pt swing. The single most important component in our best model.
+
+--- Slide 9 ---
+REAL-WORLD CONSIDERATIONS
+09 / 10
+DEPLOYMENT · BIAS · DATA
+58% on a benchmark is not 58% in the wild.
+DEPLOYMENT
+Built to run, not yet to ship.
+Real-time inference is feasible — 456K parameters fits on a phone — but accuracy drops under bad lighting, occlusion, and off-angle faces.
+Quantization (int8) needed for smooth performance on low-end devices.
+Real cameras output far higher resolution than 48×48 — a crop-and-align preprocessing step is essential.
+BIAS & ETHICS
+Not every face is in the training set.
+Demographic bias — FER-2013 is known to perform unequally across ethnicity and gender.
+Cultural difference — a "neutral" face in one culture may read as "sad" in another.
+High-stakes use in hiring, surveillance, or law enforcement should not happen without human oversight.
+DATA LIMITS
+48 × 48 hides the signal.
+Micro-expressions — the most informative cues — are simply invisible at this resolution.
+Class imbalance — Disgust having 10× fewer samples is a data problem, not a model problem.
+Crowd-sourced labels — expressions tend to be exaggerated and staged, not natural.
+
+--- Slide 10 ---
+CONCLUSION & FUTURE WORK
+10 / 10
+WHAT HELPED · AND WHAT COMES NEXT
+Architecture mattered more than any single technique.
+Seven models, one consistent pipeline. The choice of CNN over MLP gave us a 21-point jump no amount of tuning could match. After that, augmentation and Adam carried the rest of the way.
++21.0
+Convolutions
+MLP → CNN. Spatial structure is the foundation.
++6.9
+Adam optimizer
+vs SGD on the same architecture.
++3.9
+Data augmentation
+The most effective regularization we tried.
++0.6
+BatchNorm + Dropout
+Helped generalization, smaller raw lift.
+FUTURE WORK
+Train on a higher-resolution dataset like AffectNet (1M images)
+Re-run MobileNetV2 transfer learning with RGB 224×224 input
+Try attention mechanisms or Vision Transformers (ViT)
+Add face detection as a preprocessing step
+Build a real-time webcam demo with quantized weights
+Evaluate fairness across demographic subgroups
+
+--- Slide 11 ---
+Thank You!
+Any Questions?
